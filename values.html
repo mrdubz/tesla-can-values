@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tesla Toolbox — довідник сигналів</title>
+<meta name="description" content="Повний довідник CAN-сигналів Tesla Model 3 з Toolbox Proxy: 3787 параметрів (BMS, PCS, VCFRONT/VCLEFT/VCRIGHT/VCSEC, DAS, TPMS, RCM, UI та інші), з описами українською, типами, одиницями вимірювання та діапазонами значень." />
+<meta name="keywords" content="Tesla, Toolbox, CAN, BMS, сигнали, діагностика, Model 3, довідник, параметри" />
+<meta name="robots" content="index, follow" />
+<meta name="author" content="Tesla Toolbox FastReport" />
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0f0f10;
+    --panel: #1a1a1c;
+    --border: #2a2a2c;
+    --text: #eaeaea;
+    --muted: #9a9a9a;
+    --accent: #d32f2f;
+    --row-alt: #151517;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+  }
+  .header-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  h1 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .lang-switch {
+    display: flex;
+    flex: 0 0 auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .lang-switch button {
+    background: #0c0c0d;
+    color: var(--muted);
+    border: none;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .lang-switch button + button { border-left: 1px solid var(--border); }
+  .lang-switch button.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  input, select {
+    background: #0c0c0d;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  #search { flex: 1 1 260px; min-width: 200px; }
+  #stats {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  main { padding: 0 16px 24px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+  thead th {
+    position: sticky;
+    top: 92px;
+    background: var(--panel);
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(odd) { background: var(--row-alt); }
+  tbody tr:hover { background: #202023; }
+  td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  td.section {
+    color: var(--accent);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td.name {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    white-space: nowrap;
+  }
+  td.type { white-space: nowrap; color: var(--muted); }
+  td.unit, td.min, td.max, td.cycle { white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+  td.desc { max-width: 480px; }
+  details summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .enum-table { margin-top: 4px; font-size: 11px; color: var(--muted); }
+  .enum-table td { padding: 1px 6px 1px 0; border: none; }
+  #empty { padding: 24px; color: var(--muted); display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <h1 id="page-title">Tesla Toolbox — довідник сигналів</h1>
+    <div class="lang-switch">
+      <button id="lang-uk" type="button" class="active">UA</button>
+      <button id="lang-en" type="button">ENG</button>
+    </div>
+  </div>
+  <div class="controls">
+    <input id="search" type="search" placeholder="Пошук за іменем або описом..." />
+    <select id="section-filter"></select>
+    <select id="type-filter">
+      <option value="">Усі типи</option>
+      <option value="number">number</option>
+      <option value="enum">enum</option>
+      <option value="bool">bool</option>
+    </select>
+  </div>
+  <div id="stats"></div>
+</header>
+<main>
+  <table>
+    <thead>
+      <tr>
+        <th id="th-section">Секція</th>
+        <th id="th-name">Ім'я сигналу</th>
+        <th id="th-type">Тип</th>
+        <th id="th-unit">Одиниця</th>
+        <th>Min</th>
+        <th>Max</th>
+        <th id="th-cycle">Cycle, ms</th>
+        <th id="th-desc">Опис</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="empty">Нічого не знайдено.</div>
+</main>
+<script src="values.js"></script>
+<script>
+(function () {
+  const I18N = {
+    uk: {
+      pageTitle: "Tesla Toolbox — довідник сигналів",
+      searchPlaceholder: "Пошук за іменем або описом...",
+      allTypes: "Усі типи",
+      allSections: (n) => `Усі секції (${n})`,
+      empty: "Нічого не знайдено.",
+      thSection: "Секція",
+      thName: "Ім'я сигналу",
+      thType: "Тип",
+      thUnit: "Одиниця",
+      thCycle: "Cycle, ms",
+      thDesc: "Опис",
+      stats: (shown, total, sections) => `${shown} з ${total} сигналів, ${sections} секцій`,
+      enumValues: (n) => `значення (${n})`,
+      descField: "description_uk",
+      descFallback: "description",
+    },
+    en: {
+      pageTitle: "Tesla Toolbox — Сan Signal Reference",
+      searchPlaceholder: "Search by name or description...",
+      allTypes: "All types",
+      allSections: (n) => `All sections (${n})`,
+      empty: "Nothing found.",
+      thSection: "Section",
+      thName: "Signal name",
+      thType: "Type",
+      thUnit: "Unit",
+      thCycle: "Cycle, ms",
+      thDesc: "Description",
+      stats: (shown, total, sections) => `${shown} of ${total} signals, ${sections} sections`,
+      enumValues: (n) => `values (${n})`,
+      descField: "description",
+      descFallback: "description_uk",
+    },
+  };
+
+  let lang = localStorage.getItem("teslaToolboxLang") === "en" ? "en" : "uk";
+
+  const sections = typeof TESLA_SIGNAL_SECTIONS !== "undefined" ? TESLA_SIGNAL_SECTIONS : {};
+  const sectionNames = Object.keys(sections).sort((a, b) => a.localeCompare(b));
+
+  const rows = [];
+  for (const section of sectionNames) {
+    for (const sig of sections[section]) rows.push({ section, ...sig });
+  }
+  rows.sort((a, b) => a.section.localeCompare(b.section) || a.name.localeCompare(b.name));
+
+  const pageTitleEl = document.getElementById("page-title");
+  const tbody = document.getElementById("tbody");
+  const statsEl = document.getElementById("stats");
+  const emptyEl = document.getElementById("empty");
+  const searchEl = document.getElementById("search");
+  const sectionFilterEl = document.getElementById("section-filter");
+  const typeFilterEl = document.getElementById("type-filter");
+  const typeAllOpt = typeFilterEl.querySelector('option[value=""]');
+  const langUkBtn = document.getElementById("lang-uk");
+  const langEnBtn = document.getElementById("lang-en");
+  const thSectionEl = document.getElementById("th-section");
+  const thNameEl = document.getElementById("th-name");
+  const thTypeEl = document.getElementById("th-type");
+  const thUnitEl = document.getElementById("th-unit");
+  const thCycleEl = document.getElementById("th-cycle");
+  const thDescEl = document.getElementById("th-desc");
+
+  function buildSectionOptions() {
+    const t = I18N[lang];
+    const prevValue = sectionFilterEl.value;
+    sectionFilterEl.innerHTML = "";
+    const sectionOpt = document.createElement("option");
+    sectionOpt.value = "";
+    sectionOpt.textContent = t.allSections(rows.length);
+    sectionFilterEl.appendChild(sectionOpt);
+    for (const name of sectionNames) {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = `${name} (${sections[name].length})`;
+      sectionFilterEl.appendChild(opt);
+    }
+    sectionFilterEl.value = prevValue;
+  }
+  buildSectionOptions();
+
+  function applyStaticTranslations() {
+    const t = I18N[lang];
+    document.documentElement.lang = lang;
+    document.title = t.pageTitle;
+    pageTitleEl.textContent = t.pageTitle;
+    searchEl.placeholder = t.searchPlaceholder;
+    typeAllOpt.textContent = t.allTypes;
+    emptyEl.textContent = t.empty;
+    thSectionEl.textContent = t.thSection;
+    thNameEl.textContent = t.thName;
+    thTypeEl.textContent = t.thType;
+    thUnitEl.textContent = t.thUnit;
+    thCycleEl.textContent = t.thCycle;
+    thDescEl.textContent = t.thDesc;
+    langUkBtn.classList.toggle("active", lang === "uk");
+    langEnBtn.classList.toggle("active", lang === "en");
+    buildSectionOptions();
+  }
+
+  function setLang(next) {
+    if (next === lang) return;
+    lang = next;
+    localStorage.setItem("teslaToolboxLang", lang);
+    applyStaticTranslations();
+    render();
+  }
+
+  langUkBtn.addEventListener("click", () => setLang("uk"));
+  langEnBtn.addEventListener("click", () => setLang("en"));
+
+  function fmtNum(v) {
+    return v === undefined || v === null ? "" : String(v);
+  }
+
+  function buildRow(sig) {
+    const tr = document.createElement("tr");
+
+    const tdSection = document.createElement("td");
+    tdSection.className = "section";
+    tdSection.textContent = sig.section;
+
+    const tdName = document.createElement("td");
+    tdName.className = "name";
+    tdName.textContent = sig.name;
+
+    const tdType = document.createElement("td");
+    tdType.className = "type";
+    tdType.textContent = sig.type || "";
+
+    const tdUnit = document.createElement("td");
+    tdUnit.className = "unit";
+    tdUnit.textContent = sig.units || "";
+
+    const tdMin = document.createElement("td");
+    tdMin.className = "min";
+    tdMin.textContent = fmtNum(sig.min);
+
+    const tdMax = document.createElement("td");
+    tdMax.className = "max";
+    tdMax.textContent = fmtNum(sig.max);
+
+    const tdCycle = document.createElement("td");
+    tdCycle.className = "cycle";
+    tdCycle.textContent = fmtNum(sig.cycle_time);
+
+    const t = I18N[lang];
+    const tdDesc = document.createElement("td");
+    tdDesc.className = "desc";
+    const primaryText = sig[t.descField] || sig[t.descFallback] || "";
+    tdDesc.textContent = primaryText || "—";
+    if (!primaryText) tdDesc.style.color = "var(--muted)";
+    if (sig.description && sig.description_uk) tdDesc.title = sig[t.descFallback] || "";
+
+    if (sig.type === "enum" && sig.values && Object.keys(sig.values).length) {
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = t.enumValues(Object.keys(sig.values).length);
+      details.appendChild(summary);
+      const enumTable = document.createElement("table");
+      enumTable.className = "enum-table";
+      for (const [k, v] of Object.entries(sig.values)) {
+        const r = document.createElement("tr");
+        const c1 = document.createElement("td");
+        c1.textContent = k;
+        const c2 = document.createElement("td");
+        c2.textContent = v;
+        r.append(c1, c2);
+        enumTable.appendChild(r);
+      }
+      details.appendChild(enumTable);
+      tdDesc.appendChild(details);
+    }
+
+    tr.append(tdSection, tdName, tdType, tdUnit, tdMin, tdMax, tdCycle, tdDesc);
+    return tr;
+  }
+
+  let searchTimer = null;
+  function render() {
+    const q = searchEl.value.trim().toLowerCase();
+    const sectionFilter = sectionFilterEl.value;
+    const typeFilter = typeFilterEl.value;
+
+    const filtered = rows.filter((r) => {
+      if (sectionFilter && r.section !== sectionFilter) return false;
+      if (typeFilter && r.type !== typeFilter) return false;
+      if (
+        q &&
+        !r.name.toLowerCase().includes(q) &&
+        !(r.description || "").toLowerCase().includes(q) &&
+        !(r.description_uk || "").toLowerCase().includes(q)
+      ) return false;
+      return true;
+    });
+
+    tbody.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    for (const r of filtered) frag.appendChild(buildRow(r));
+    tbody.appendChild(frag);
+
+    emptyEl.style.display = filtered.length ? "none" : "block";
+    statsEl.textContent = I18N[lang].stats(filtered.length, rows.length, sectionNames.length);
+  }
+
+  searchEl.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(render, 120);
+  });
+  sectionFilterEl.addEventListener("change", render);
+  typeFilterEl.addEventListener("change", render);
+
+  applyStaticTranslations();
+  render();
+})();
+</script>
+</body>
+</html>
